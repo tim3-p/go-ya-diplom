@@ -19,7 +19,7 @@ func CreateOrder(db *sql.DB) *Order {
 }
 
 func (r *Order) Create(ctx context.Context, order models.Order) error {
-	sqlStatement := `INSERT INTO "order" (number, status, uploaded_at, user_id) VALUES ($1, $2, $3, $4)`
+	sqlStatement := `INSERT INTO "order" (number, status, created_at, user_id) VALUES ($1, $2, $3, $4)`
 	_, err := r.db.ExecContext(ctx, sqlStatement, order.Number, order.Status, order.CreatedAt, order.UserID)
 	return err
 }
@@ -27,7 +27,7 @@ func (r *Order) Create(ctx context.Context, order models.Order) error {
 func (r *Order) GetByUserID(ctx context.Context, userID uint64) ([]models.Order, error) {
 	var orders []models.Order
 
-	rows, err := r.db.QueryContext(ctx, `SELECT id, number, status, accrual, uploaded_at, user_id FROM "order" WHERE user_id = $1`, userID)
+	rows, err := r.db.QueryContext(ctx, `SELECT id, number, status, accrual, created_at, user_id FROM "order" WHERE user_id = $1`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (r *Order) GetByUserID(ctx context.Context, userID uint64) ([]models.Order,
 func (r *Order) GetByNumber(ctx context.Context, number string) (models.Order, error) {
 	var order models.Order
 
-	sqlStatement := `SELECT id, number, status, accrual, uploaded_at, user_id FROM "order" WHERE number = $1`
+	sqlStatement := `SELECT id, number, status, accrual, created_at, user_id FROM "order" WHERE number = $1`
 	row := r.db.QueryRowContext(ctx, sqlStatement, number)
 	err := row.Scan(&order.ID, &order.Number, &order.Status, &order.Accrual, &order.CreatedAt, &order.UserID)
 	if err != nil {
