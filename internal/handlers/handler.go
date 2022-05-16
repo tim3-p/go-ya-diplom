@@ -14,19 +14,14 @@ import (
 )
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	credentials := models.Credentials{}
-	if err := json.Unmarshal(b, &credentials); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	ctx := r.Context()
 
-	_, err = h.user.GetByLogin(r.Context(), credentials.Login)
+	_, err := h.user.GetByLogin(ctx, credentials.Login)
 	if err == nil {
 		http.Error(w, "login has already been taken", http.StatusConflict)
 		return
@@ -37,7 +32,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		PasswordHash: service.Hash(credentials.Password),
 	}
 
-	err = h.user.Create(r.Context(), newUser)
+	err = h.user.Create(ctx, newUser)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -109,24 +104,24 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: time.Now(),
 		UserID:    user.ID,
 	}
+	ctx := r.Context()
 
-	order, err := h.order.GetByNumber(r.Context(), number)
-	if err != nil {
-		if errors.As(err, &sql.ErrNoRows) {
-			err = h.order.Create(r.Context(), newOrder)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			h.pointAccrualService.Accrue(newOrder.Number)
-
-			w.WriteHeader(http.StatusAccepted)
-			return
-		} else {
+	order, err := h.order.GetByNumber(ctx, number)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		err = h.order.Create(r.Context(), newOrder)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		h.pointAccrualService.Accrue(newOrder.Number)
+
+		w.WriteHeader(http.StatusAccepted)
+		return
 	}
 
 	if order.UserID != user.ID {
@@ -225,15 +220,16 @@ func (h *Handler) Withdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	withdrawal := &models.Withdrawal{
-		CreatedAt: time.Now(),
-		UserID:    user.ID,
-	}
+	withdrawal := &models.Withdrawal{}
+
 	err = json.Unmarshal(b, &withdrawal)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	withdrawal.CreatedAt = time.Now()
+	withdrawal.UserID = user.ID
 
 	err = service.CheckOrderNumber(withdrawal.Order)
 	if err != nil {

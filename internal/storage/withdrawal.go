@@ -36,7 +36,7 @@ func (r *Withdrawal) Create(ctx context.Context, withdrawal models.Withdrawal) e
 	}()
 
 	var balance float64
-	row := tx.QueryRowContext(ctx, `SELECT balance FROM "user" WHERE id = $1`, withdrawal.UserID)
+	row := tx.QueryRowContext(ctx, `SELECT balance FROM users WHERE id = $1`, withdrawal.UserID)
 	err = row.Scan(&balance)
 	if err != nil {
 		return err
@@ -52,7 +52,7 @@ func (r *Withdrawal) Create(ctx context.Context, withdrawal models.Withdrawal) e
 		return err
 	}
 
-	updateBalanceStatement := `UPDATE "user" SET balance = balance - $1, withdrawn = withdrawn + $1 WHERE id = $2`
+	updateBalanceStatement := `UPDATE users SET balance = balance - $1, withdrawn = withdrawn + $1 WHERE id = $2`
 	_, err = tx.ExecContext(ctx, updateBalanceStatement, withdrawal.Sum, withdrawal.UserID)
 	if err != nil {
 		return err
