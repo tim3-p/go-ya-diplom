@@ -46,7 +46,7 @@ func (r *Withdrawal) Create(ctx context.Context, withdrawal models.Withdrawal) e
 		return ErrInsufficientBalance
 	}
 
-	createWithdrawalStatement := `INSERT INTO withdrawal ("order", sum, created_at, user_id) VALUES ($1, $2, $3, $4)`
+	createWithdrawalStatement := `INSERT INTO withdrawal (order_val, sum, created_at, user_id) VALUES ($1, $2, $3, $4)`
 	_, err = tx.ExecContext(ctx, createWithdrawalStatement, withdrawal.Order, withdrawal.Sum, withdrawal.CreatedAt, withdrawal.UserID)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (r *Withdrawal) Create(ctx context.Context, withdrawal models.Withdrawal) e
 func (r *Withdrawal) GetByUserID(ctx context.Context, userID uint64) ([]models.Withdrawal, error) {
 	var withdrawals []models.Withdrawal
 
-	rows, err := r.db.QueryContext(ctx, `SELECT id, "order", sum, created_at, user_id FROM withdrawal WHERE user_id = $1`, userID)
+	rows, err := r.db.QueryContext(ctx, `SELECT id, order_val, sum, created_at, user_id FROM withdrawal WHERE user_id = $1`, userID)
 	if err != nil {
 		return nil, err
 	}
