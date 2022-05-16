@@ -80,6 +80,6 @@ func (s *Accrual) Stop() {
 	close(s.orders)
 }
 
-func (s *Accrual) Accrue(order string) {
-	s.orders <- order
+func (s *Accrual) Accrue(orderNumber string) {
+	s.orders <- orderNumber
 }

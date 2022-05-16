@@ -19,7 +19,7 @@ func CreateOrder(db *sql.DB) *Order {
 }
 
 func (r *Order) Create(ctx context.Context, order models.Order) error {
-	sqlStatement := `INSERT INTO "order" (number, status, created_at, user_id) VALUES ($1, $2, $3, $4)`
+	sqlStatement := `INSERT INTO orders (number, status, created_at, user_id) VALUES ($1, $2, $3, $4)`
 	_, err := r.db.ExecContext(ctx, sqlStatement, order.Number, order.Status, order.CreatedAt, order.UserID)
 	return err
 }
@@ -27,7 +27,7 @@ func (r *Order) Create(ctx context.Context, order models.Order) error {
 func (r *Order) GetByUserID(ctx context.Context, userID uint64) ([]models.Order, error) {
 	var orders []models.Order
 
-	rows, err := r.db.QueryContext(ctx, `SELECT id, number, status, accrual, created_at, user_id FROM "order" WHERE user_id = $1`, userID)
+	rows, err := r.db.QueryContext(ctx, `SELECT id, number, status, accrual, created_at, user_id FROM orders WHERE user_id = $1`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (r *Order) GetByUserID(ctx context.Context, userID uint64) ([]models.Order,
 func (r *Order) GetByNumber(ctx context.Context, number string) (models.Order, error) {
 	var order models.Order
 
-	sqlStatement := `SELECT id, number, status, accrual, created_at, user_id FROM "order" WHERE number = $1`
+	sqlStatement := `SELECT id, number, status, accrual, created_at, user_id FROM orders WHERE number = $1 LIMIT 1`
 	row := r.db.QueryRowContext(ctx, sqlStatement, number)
 	err := row.Scan(&order.ID, &order.Number, &order.Status, &order.Accrual, &order.CreatedAt, &order.UserID)
 	if err != nil {
@@ -79,18 +79,18 @@ func (r *Order) UpdateAccrual(ctx context.Context, accrual models.Accrual) error
 	}
 	defer tx.Rollback()
 
-	updateOrderStatement := `UPDATE "order" SET status = $1, accrual = $2 WHERE number = $3`
+	updateOrderStatement := `UPDATE orders SET status = $1, accrual = $2 WHERE number = $3`
 	_, err = tx.ExecContext(ctx, updateOrderStatement, accrual.Status, accrual.Accrual, accrual.Order)
 	if err != nil {
 		return err
 	}
 
 	increaseBalanceStatement := `
-UPDATE "user"
-SET balance = "user".balance + $1
-FROM "user" as u
-INNER JOIN "order" ON u.id = "order".user_id
-WHERE "order".number = $2
+UPDATE users
+SET balance = users.balance + $1
+FROM users as u
+INNER JOIN orders ON u.id = orders.user_id
+WHERE orders.number = $2
 `
 	_, err = tx.ExecContext(ctx, increaseBalanceStatement, accrual.Accrual, accrual.Order)
 	if err != nil {

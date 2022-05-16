@@ -18,7 +18,7 @@ func CreateUser(db *sql.DB) *User {
 }
 
 func (r *User) Create(ctx context.Context, user models.User) error {
-	sqlStatement := `INSERT INTO "user" (login, password_hash) VALUES ($1, $2)`
+	sqlStatement := `INSERT INTO users (login, password_hash) VALUES ($1, $2)`
 	_, err := r.db.ExecContext(ctx, sqlStatement, user.Login, user.PasswordHash)
 	return err
 }
@@ -26,7 +26,7 @@ func (r *User) Create(ctx context.Context, user models.User) error {
 func (r *User) GetByLogin(ctx context.Context, login string) (models.User, error) {
 	var user models.User
 
-	row := r.db.QueryRowContext(ctx, `SELECT id, login, password_hash, balance, withdrawn FROM "user" WHERE login = $1`, login)
+	row := r.db.QueryRowContext(ctx, `SELECT id, login, password_hash, balance, withdrawn FROM users WHERE login = $1`, login)
 	err := row.Scan(&user.ID, &user.Login, &user.PasswordHash, &user.Balance, &user.Withdrawn)
 	if err != nil {
 		return models.User{}, err

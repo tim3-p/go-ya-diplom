@@ -20,7 +20,7 @@ func InitConfig() Config {
 		RunAddress:           "http://localhost:8080",
 		DatabasURI:           "",
 		AccrualSystemAddress: "",
-		Key:                  "MySecretKey",
+		Key:                  "]X5uhRFCcd4gU",
 		MigrationDir:         "./migrations",
 	}
 
